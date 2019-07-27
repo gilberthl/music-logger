@@ -28,24 +28,23 @@ func Start(deviceID portmidi.DeviceID, sig <-chan interface{}) {
 
 	for {
 		start := time.Now()
-		go func() {
-			out.WriteShort(0x90, 60, 100)
-			time.Sleep(time.Millisecond * 500)
-			out.WriteShort(0x80, 60, 100)
-		}()
 
+		out.WriteShort(0x90, 60, 100)
 		select {
 		case <-sig:
-			fmt.Println("SIG")
+			out.WriteShort(0x80, 60, 100)
 			playSecondNote(time.Now().Sub(start))
 		case <-time.After(time.Second * 2):
 			playSecondNote(time.Second * 2)
+			out.WriteShort(0x80, 60, 100)
+
 		}
 	}
+	// GetSMF("../data/Tetris - Tetris Main Theme.mid", out)
 }
 
-func GetSMF() []midi.Track {
-	f, err := os.Open("../data/Tetris - Tetris Main Theme.mid")
+func GetSMF(filepath string, out *portmidi.Stream) []midi.Track {
+	f, err := os.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,20 +54,22 @@ func GetSMF() []midi.Track {
 	if err != nil {
 		panic(err)
 	}
+
+	for i, track := range file.Tracks {
+		fmt.Printf("track#%d: %5d events\n", i, len(track.Events))
+		for _, event := range track.Events {
+			go func(event midi.Event) {
+				fmt.Println("event")
+				time.Sleep(time.Millisecond * 100)
+				// ints := GetMessageInts(event)
+				// out.WriteShort(0x90, ints[1], ints[2])
+				// out.WriteShort(0x90, 60, 100)
+				// out.WriteSysExBytes(portmidi.Timestamp(event.Tick), event.Messages)
+			}(event)
+		}
+	}
 	return file.Tracks
 
-	// for i, track := range file.Tracks {
-	// 	fmt.Printf("track#%d: %5d events\n", i, len(track.Events))
-	// 	for _, event := range track.Events {
-	// 		go func(event midi.Event) {
-	// 			time.Sleep(time.Millisecond * time.Duration(event.Tick))
-	// 			ints := GetMessageInts(event)
-	// 			fmt.Println(ints)
-	// 			// out.WriteSysExBytes(portmidi.Timestamp(event.Tick), event.Messages)
-	// 			out.WriteShort(0x90, ints[1], ints[2])
-	// 		}(event)
-	// 	}
-	// }
 }
 
 func GetMessageInts(e midi.Event) [3]int64 {

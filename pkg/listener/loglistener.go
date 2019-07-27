@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"fmt"
 	"github.com/hpcloud/tail"
 )
 
@@ -15,7 +14,6 @@ func (l *LogListener) Listen(filepath string) {
 		panic(err)
 	}
 	for line := range t.Lines {
-		fmt.Println("LOG")
 		l.Chan <- line.Text
 	}
 }
